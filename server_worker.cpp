@@ -19,10 +19,8 @@ ServerWorker::ServerWorker(QObject *parent)
 #endif
 }
 
-
 ServerWorker::~ServerWorker() {
 }
-
 
 bool ServerWorker::setSocketDescriptor(qintptr socketDescriptor)
 {

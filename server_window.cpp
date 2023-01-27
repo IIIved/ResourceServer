@@ -57,7 +57,6 @@ void ServerWindow::toggleReg()
 
 }
 
-
 void ServerWindow::toggleResRequests()
 {
     if (m_server->acceptResRequest)
@@ -67,10 +66,6 @@ void ServerWindow::toggleResRequests()
 
     m_server->acceptResRequest = !m_server->acceptResRequest;
 }
-
-
-
-
 
 void ServerWindow::on_clearResources_clicked()
 {

@@ -45,7 +45,6 @@ public slots:
     void stopServer();
     void startServer();
 
-
 private slots:
     void jsonReceived(ServerWorker *sender, const QJsonObject &doc);
 

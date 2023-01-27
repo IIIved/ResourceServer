@@ -11,5 +11,4 @@ struct TConfig {
 
 TConfig LoadConfig(const QString& fileName);
 
-
 #endif // CONFIG_H
