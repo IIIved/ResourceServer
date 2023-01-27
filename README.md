@@ -1,2 +1,0 @@
-# IResourceServer
-# ResourceServer
