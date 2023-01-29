@@ -1,5 +1,6 @@
+#include "resourceserver.h"
+#include "ServerWorker.h"
 #include "IResourcesServer.h"
-#include "server_worker.h"
 
 #include <QThread>
 #include <functional>
@@ -66,9 +67,8 @@ QJsonObject SendingMessage::toJsonObject() const {
     return jsonObject;
 }
 
-IResourcesServer::IResourcesServer(QObject *parent)
-    : QTcpServer(parent)
-    , m_config(LoadConfig(":/Config/config.ini"))
+ResourceServer::ResourceServer(QObject *parent)
+    : m_config(LoadConfig(":/Config/config.ini"))
     , m_resource_controller(m_config)
     , m_update_timer(parent)
 {
@@ -76,11 +76,11 @@ IResourcesServer::IResourcesServer(QObject *parent)
     connect(&m_update_timer, SIGNAL(timeout()), &m_resource_controller, SLOT(updateResources()));
 }
 
-qint32 IResourcesServer::port() const {
+qint32 ResourceServer::port() const {
     return m_config.port;
 }
 
-void IResourcesServer::incomingConnection(qintptr socketDescriptor)
+void ResourceServer::incomingConnection(qintptr socketDescriptor)
 {
     ServerWorker *worker = new ServerWorker(this);
     if (!worker->setSocketDescriptor(socketDescriptor)) {
@@ -88,24 +88,24 @@ void IResourcesServer::incomingConnection(qintptr socketDescriptor)
         return;
     }
 
-    connect(worker, &ServerWorker::disconnectedFromServer, this, std::bind(&IResourcesServer::userDisconnected, this, worker,""));
-    connect(worker, &ServerWorker::error, this, std::bind(&IResourcesServer::userError, this, worker));
-    connect(worker, &ServerWorker::jsonReceived, this, std::bind(&IResourcesServer::jsonReceived, this, worker, std::placeholders::_1));
-    connect(worker, &ServerWorker::logMessage, this, &IResourcesServer::logMessage);
+    connect(worker, &ServerWorker::disconnectedFromServer, this, std::bind(&ResourceServer::userDisconnected, this, worker,""));
+    connect(worker, &ServerWorker::error, this, std::bind(&ResourceServer::userError, this, worker));
+    connect(worker, &ServerWorker::jsonReceived, this, std::bind(&ResourceServer::jsonReceived, this, worker, std::placeholders::_1));
+    connect(worker, &ServerWorker::logMessage, this, &ResourceServer::logMessage);
 
-    connect(&m_resource_controller, &TResourceController::resourceIsReleasedByServer, this, &IResourcesServer::resourceIsReleasedByServer);
+    connect(&m_resource_controller, &ResourceController::resourceIsReleasedByServer, this, &ResourceServer::resourceIsReleasedByServer);
 
     m_clients.append(worker);
     emit logMessage(QStringLiteral("New client Connected"));
 }
 
-void IResourcesServer::sendJson(ServerWorker *destination, const QJsonObject &message)
+void ResourceServer::sendJson(ServerWorker *destination, const QJsonObject &message)
 {
     Q_ASSERT(destination);
     destination->sendJson(message);
 }
 
-void IResourcesServer::sendMessageToAllUsers(const QJsonObject &message, ServerWorker *exclude)
+void ResourceServer::sendMessageToAllUsers(const QJsonObject &message, ServerWorker *exclude)
 {
     for (ServerWorker *worker : m_clients) {
         Q_ASSERT(worker);
@@ -115,7 +115,7 @@ void IResourcesServer::sendMessageToAllUsers(const QJsonObject &message, ServerW
     }
 }
 
-void IResourcesServer::resourceIsReleasedByServer(const QString& userName,quint32 idx) {
+void ResourceServer::resourceIsReleasedByServer(const QString& userName,quint32 idx) {
 
     for (ServerWorker *worker : m_clients) {
         if(   worker->userName().isEmpty()
@@ -127,7 +127,7 @@ void IResourcesServer::resourceIsReleasedByServer(const QString& userName,quint3
 
         sendJson(worker, SendingMessage{
                      .type = QStringLiteral("resource_status"),
-                     .message = enumToString(TResourceController::ResourceIsReleasedByServer),
+                     .message = enumToString(ResourceController::ResourceIsReleasedByServer),
                      .status = 0,
                      .resource = 1 << idx
                  }.toJsonObject());
@@ -135,7 +135,7 @@ void IResourcesServer::resourceIsReleasedByServer(const QString& userName,quint3
 }
 
 
-void IResourcesServer::userDisconnected(ServerWorker *sender, const QString &msg)
+void ResourceServer::userDisconnected(ServerWorker *sender, const QString &msg)
 {
     if(m_clients.removeAll(sender)) {
         const QString userName = sender->userName();
@@ -155,16 +155,16 @@ void IResourcesServer::userDisconnected(ServerWorker *sender, const QString &msg
     }
 }
 
-void IResourcesServer::userError(ServerWorker *sender)
+void ResourceServer::userError(ServerWorker *sender)
 {
     Q_UNUSED(sender)
 }
 
-void IResourcesServer::startServer() {
+void ResourceServer::startServer() {
     m_update_timer.start(1000);
 }
 
-void IResourcesServer::stopServer()
+void ResourceServer::stopServer()
 {
     m_update_timer.stop();
     for (ServerWorker *worker : m_clients) {
@@ -173,7 +173,7 @@ void IResourcesServer::stopServer()
     close();
 }
 
-void IResourcesServer::jsonReceived(ServerWorker *sender, const QJsonObject &doc)
+void ResourceServer::jsonReceived(ServerWorker *sender, const QJsonObject &doc)
 {
     Q_ASSERT(sender);
     emit logMessage("JSON received " + QString::fromUtf8(QJsonDocument(doc).toJson(QJsonDocument::Compact)));
@@ -185,10 +185,9 @@ void IResourcesServer::jsonReceived(ServerWorker *sender, const QJsonObject &doc
     }
 }
 
-bool IResourcesServer::tryProcessResourceStatus(ServerWorker *sender, const QJsonObject &doc)
+bool ResourceServer::tryProcessResourceStatus(ServerWorker *sender, const QJsonObject &doc)
 {
     try{
-
         const auto userName = sender->userName();
         const QString type = toStringJsonValue(doc,"type");
         const qint64 lifeTimeSecondsMSecs = toNumJsonValue<qint64>(doc,"time") * 1000;
@@ -200,10 +199,10 @@ bool IResourcesServer::tryProcessResourceStatus(ServerWorker *sender, const QJso
             if(list.empty() || !acceptResRequest) {
                 sendJson(sender, SendingMessage{
                              .type = QStringLiteral("resource_status"),
-                             .message = enumToString(TResourceController::InvalidResourceIndex),
+                             .message = enumToString(ResourceController::InvalidResourceIndex),
                              .status = 0
                          }.toJsonObject());
-                emit logMessage(userName + " couldn't reserve a resource by " + enumToString(TResourceController::InvalidResourceIndex));
+                emit logMessage(userName + " couldn't reserve a resource by " + enumToString(ResourceController::InvalidResourceIndex));
             } else {
 
                 QString idxString;
@@ -213,11 +212,11 @@ bool IResourcesServer::tryProcessResourceStatus(ServerWorker *sender, const QJso
                     sendJson(sender, SendingMessage{
                                  .type = QStringLiteral("resource_status"),
                                  .message = enumToString(response),
-                                 .status = response == TResourceController::Success,
+                                 .status = response == ResourceController::Success,
                                  .resource = 1 << idx
                              }.toJsonObject());
 
-                    if(response == TResourceController::Success){
+                    if(response == ResourceController::Success){
                         idxString += QString::number(idx+1);
                     } else {
                         emit logMessage(userName + " couldn't reserve a resource by " + enumToString(response));
@@ -236,7 +235,7 @@ bool IResourcesServer::tryProcessResourceStatus(ServerWorker *sender, const QJso
 }
 
 
-void IResourcesServer::authorization(ServerWorker *sender, const QJsonObject &doc)
+void ResourceServer::authorization(ServerWorker *sender, const QJsonObject &doc)
 {
     Q_ASSERT(sender);
 
@@ -289,7 +288,7 @@ void IResourcesServer::authorization(ServerWorker *sender, const QJsonObject &do
     }
 }
 
-void IResourcesServer::clearResources(){
+void ResourceServer::clearResources(){
     m_resource_controller.freeAllResources();
     emit logMessage("all resources are released");
 }

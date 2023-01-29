@@ -6,12 +6,25 @@
 #include <QObject>
 #include <QString>
 #include <QMutex>
-
+#include <QtPlugin>
 #include <vector>
 
-class TResourceController : public QObject {
+struct SendingMessage{
+    QVariant type;
+    QVariant username;
+    QVariant message;
+    QVariant status;
+    QVariant resource;
+    QVariant request;
+
+    QJsonObject toJsonObject() const;
+};
+
+class IResourcesServer;
+
+class ResourceController : public QObject {
     Q_OBJECT
-    Q_DISABLE_COPY(TResourceController)
+    Q_DISABLE_COPY(ResourceController)
 
 public:
     enum EResourceResponses {
@@ -38,7 +51,7 @@ public:
     Q_ENUM(EResourceResponses)
 
 public:
-    TResourceController(const TConfig& config);
+    ResourceController(const Config& config);
 
     bool checkUserAccess(const QString& userName);
 
@@ -59,7 +72,7 @@ private:
     QMutex m_mutex;
 
     std::vector<TResourceData> m_resourcesData;
-    const TConfig& m_config;
+    const Config& m_config;
 };
 
 #endif // RESOURCECONTROLLER_H

@@ -6,7 +6,7 @@
 namespace Ui {
 class ServerWindow;
 }
-class IResourcesServer;
+class ResourceServer;
 class ServerWindow : public QWidget
 {
     Q_OBJECT
@@ -16,7 +16,7 @@ public:
     ~ServerWindow();
 private:
     Ui::ServerWindow *ui;
-    IResourcesServer *m_server;
+    ResourceServer *m_server;
 private slots:
     void toggleStartServer();
     void logMessage(const QString &msg);

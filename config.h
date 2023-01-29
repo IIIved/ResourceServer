@@ -3,12 +3,12 @@
 
 #include <QStringList>
 
-struct TConfig {
+struct Config {
     QStringList usersList;
     qint32 resourcesCount;
     qint32 port;
 };
 
-TConfig LoadConfig(const QString& fileName);
+Config LoadConfig(const QString& fileName);
 
 #endif // CONFIG_H

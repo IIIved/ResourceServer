@@ -1,9 +1,11 @@
-#include "server_worker.h"
+#include "ServerWorker.h"
 
 #include <QDataStream>
 #include <QJsonDocument>
 #include <QJsonParseError>
 #include <QJsonObject>
+#include <QJsonArray>
+
 
 ServerWorker::ServerWorker(QObject *parent)
     : QObject(parent)
@@ -55,8 +57,10 @@ void ServerWorker::setUserName(const QString &userName)
 void ServerWorker::receiveJson()
 {
     QByteArray jsonData;
+    QString list;
     QDataStream socketStream(&m_serverSocket);
     socketStream.setVersion(QDataStream::Qt_5_7);
+
 
     for (;;) {
         socketStream.startTransaction();
@@ -73,7 +77,22 @@ void ServerWorker::receiveJson()
                 emit logMessage("Invalid message: " + QString::fromUtf8(jsonData));
             }
         } else {
+            while (m_serverSocket.canReadLine())
+            {
+                list = QString(m_serverSocket.readLine());
+                QJsonObject obj;
+                QJsonDocument doc = QJsonDocument::fromJson(list.toUtf8());
+                obj = doc.object();
+                QString jsonString = doc.toJson(QJsonDocument::Indented);
+                list.append(jsonString);
+                if (doc.isObject()){
+                    emit jsonReceived(doc.object());
+                }
+            }
             break;
         }
     }
 }
+
+
+

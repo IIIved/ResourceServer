@@ -1,6 +1,6 @@
-#include "server_window.h"
+#include "ServerWindow.h"
 #include "ui_server_window.h"
-#include "IResourcesServer.h"
+#include "resourceserver.h"
 
 #include <QMessageBox>
 #include <QSettings>
@@ -9,11 +9,11 @@
 ServerWindow::ServerWindow(QWidget *parent)
     : QWidget(parent)
     , ui(new Ui::ServerWindow)
-    , m_server(new IResourcesServer(this))
+    , m_server(new ResourceServer(this))
 {
     ui->setupUi(this);
     connect(ui->startStopButton, &QPushButton::clicked, this, &ServerWindow::toggleStartServer);
-    connect(m_server, &IResourcesServer::logMessage, this, &ServerWindow::logMessage);
+    connect(m_server, &ResourceServer::logMessage, this, &ServerWindow::logMessage);
     connect(ui->regButton, &QPushButton::clicked, this, &ServerWindow::toggleReg);
     connect(ui->noResRequests, &QPushButton::clicked, this, &ServerWindow::toggleResRequests);
 }

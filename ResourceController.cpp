@@ -1,16 +1,16 @@
-#include "resource_controller.h"
+#include "ResourceController.h"
 
 #include <QDateTime>
 
 #include <algorithm>
 
-TResourceController::TResourceController(const TConfig& config)
+ResourceController::ResourceController(const Config& config)
     : m_config(config)
 {
     m_resourcesData.resize(m_config.resourcesCount);
 }
 
-bool TResourceController::checkUserAccess(const QString& userName) {
+bool ResourceController::checkUserAccess(const QString& userName) {
     const auto& usersList = m_config.usersList;
 
     const auto it = std::find_if(usersList.begin(), usersList.end(), [userName](const auto& value){
@@ -20,13 +20,15 @@ bool TResourceController::checkUserAccess(const QString& userName) {
     return it !=  usersList.end();
 }
 
-std::vector<qint32> TResourceController::resourceListByMask(qint32 mask) const
+std::vector<qint32> ResourceController::resourceListByMask(qint32 mask) const
 {
     std::vector<qint32> list;
+    QByteArray bar;
+    bar.resize(4);
+    memcpy(bar.data(), &mask, sizeof(qint32));
 
     for(qint32 i = 0; i < 31; i++) {
-
-       if( mask & 1 << i) {
+       if(bar[i] > 0) {
           list.push_back(i);
        }
     }
@@ -34,7 +36,7 @@ std::vector<qint32> TResourceController::resourceListByMask(qint32 mask) const
     return list;
 }
 
-void TResourceController::updateResources()
+void ResourceController::updateResources()
 {
     QMutexLocker ml(&m_mutex);
     const auto currentTimestamp = QDateTime::currentMSecsSinceEpoch();
@@ -56,7 +58,7 @@ void TResourceController::updateResources()
 }
 
 
-TResourceController::EResourceResponses TResourceController::reserveResource(const QString& userName, const quint32 idx, const qint64 lifeTimeMSecs) {
+ResourceController::EResourceResponses ResourceController::reserveResource(const QString& userName, const quint32 idx, const qint64 lifeTimeMSecs) {
     QMutexLocker ml(&m_mutex);
 
     if(idx >= m_resourcesData.size()) {
@@ -91,7 +93,7 @@ TResourceController::EResourceResponses TResourceController::reserveResource(con
     return EResourceResponses::Success;
 }
 
-void TResourceController::freeClientResources(const QString& userName)
+void ResourceController::freeClientResources(const QString& userName)
 {
     if(userName.isEmpty()) {
         return;
@@ -107,7 +109,7 @@ void TResourceController::freeClientResources(const QString& userName)
     }
 }
 
-void TResourceController::freeAllResources()
+void ResourceController::freeAllResources()
 {
     for(quint32 idx = 0; idx < m_resourcesData.size(); idx++) {
             auto& data = m_resourcesData[idx];

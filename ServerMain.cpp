@@ -1,4 +1,4 @@
-#include "server_window.h"
+#include "ServerWindow.h"
 
 #include <QApplication>
 

@@ -9,21 +9,22 @@ CONFIG += debug_and_release
 
 HEADERS += \
     IResourcesServer.h \
+    ResourceController.h \
+    ServerWindow.h \
+    ServerWorker.h \
     config.h \
-    resource_controller.h \
-    server_worker.h \
-    server_window.h
+    resourceserver.h
 
 SOURCES += \
-    IResourcesServer.cpp \
+    ResourceController.cpp \
+    ServerMain.cpp \
+    ServerWindow.cpp \
+    ServerWorker.cpp \
     config.cpp \
-    resource_controller.cpp \
-    server_main.cpp \
-    server_worker.cpp \
-    server_window.cpp
+    resourceserver.cpp
 
 FORMS += \
-    server_window.ui
+    ServerWindow.ui
 
 RESOURCES += \
     resource.qrc
